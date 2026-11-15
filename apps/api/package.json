@@ -1,0 +1,19 @@
+{
+  "name": "@ginkit/api",
+  "private": true,
+  "exports": {
+    "./openapi.yaml": "./openapi.yaml"
+  },
+  "scripts": {
+    "dev": "go tool air",
+    "generate": "go generate ./...",
+    "build": "go generate ./... && go build -o bin/api ./cmd/api",
+    "start": "./bin/api",
+    "test": "go test ./...",
+    "lint": "go vet ./...",
+    "fmt": "gofmt -l -w cmd internal",
+    "fmt:check": "test -z \"$(gofmt -l cmd internal)\"",
+    "tidy": "go mod tidy",
+    "docker:build": "docker build -t ginkit-api ."
+  }
+}

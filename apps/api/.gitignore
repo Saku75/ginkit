@@ -1,0 +1,13 @@
+# Build output
+bin/
+tmp/
+
+# Local environment, loaded by Air
+.env
+
+# Fetched by go generate, embedded at build time
+internal/handlers/docs/assets/
+
+# pnpm writes an empty lockfile when this package is run on its own
+node_modules/
+pnpm-lock.yaml

@@ -1,0 +1,31 @@
+#:schema https://json.schemastore.org/any.json
+# Live reload for development. Run with: go tool air
+
+root = "."
+tmp_dir = "tmp"
+
+# Loaded into the app's environment on every restart. A missing file is ignored.
+env_files = [".env"]
+
+[build]
+# Fetches the docs assets once and rewrites openapi.yaml on every rebuild.
+pre_cmd = ["go generate ./..."]
+cmd = "go build -o ./tmp/api ./cmd/api"
+bin = "tmp/api"
+entrypoint = ["./tmp/api"]
+
+include_ext = ["go"]
+include_file = [".env"]
+exclude_dir = ["tmp", "vendor", "testdata"]
+exclude_regex = ["_test\\.go"]
+exclude_unchanged = true
+
+# Keep the old binary running if a rebuild fails.
+stop_on_error = true
+
+[log]
+time = false
+main_only = false
+
+[misc]
+clean_on_exit = true

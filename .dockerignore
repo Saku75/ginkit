@@ -1,0 +1,10 @@
+.git
+node_modules
+**/node_modules
+**/.svelte-kit
+**/build
+**/.turbo
+apps/api/bin
+apps/api/tmp
+apps/api/internal/handlers/docs/assets
+apps/web/src/lib/api
