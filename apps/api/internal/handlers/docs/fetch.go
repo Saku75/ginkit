@@ -1,9 +1,9 @@
 //go:build ignore
 
-// Fetches the Stoplight Elements files that the docs page serves into assets/.
-// They are downloaded as the npm package from NPM_REGISTRY, which defaults to
-// the public registry, and verified against the registry's integrity hash.
-// Run with go generate; it does nothing when the files are already present.
+// Fetches the Stoplight Elements files that the docs page serves. They are
+// downloaded as the npm package from NPM_REGISTRY, which defaults to the
+// public registry, and verified against the registry's integrity hash. Run by
+// go generate at the module root; it does nothing when the files are present.
 package main
 
 import (
@@ -14,6 +14,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"net/http"
@@ -27,12 +28,17 @@ import (
 const (
 	pkg     = "@stoplight/elements"
 	version = "9.0.15"
-	dir     = "assets"
 )
 
-var files = []string{"web-components.min.js", "styles.min.css"}
+var (
+	dir   string
+	files = []string{"web-components.min.js", "styles.min.css"}
+)
 
 func main() {
+	flag.StringVar(&dir, "o", "assets", "directory to write the files to")
+	flag.Parse()
+
 	if err := run(); err != nil {
 		fmt.Fprintln(os.Stderr, "fetch docs assets:", err)
 		os.Exit(1)

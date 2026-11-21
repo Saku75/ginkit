@@ -8,6 +8,7 @@
     "dev": "go tool air",
     "generate": "go generate ./...",
     "build": "go generate ./... && go build -o bin/api ./cmd/api",
+    "check": "go generate ./... && git diff --exit-code -- openapi.yaml",
     "start": "./bin/api",
     "test": "go test ./...",
     "lint": "go vet ./...",

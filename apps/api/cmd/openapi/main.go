@@ -1,9 +1,7 @@
 // Command openapi writes the OpenAPI document that the web app generates its
-// client from. go generate keeps openapi.yaml current. The document has no
-// base path; clients set the mount point as their base URL.
+// client from. go generate at the module root keeps openapi.yaml current. The
+// document has no server; clients set the mount point as their base URL.
 package main
-
-//go:generate go run . -o ../../openapi.yaml
 
 import (
 	"context"

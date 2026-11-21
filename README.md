@@ -57,21 +57,22 @@ grep -rl '@ginkit/' --include='*.json' --include='*.ts' --include='Dockerfile' .
 Run these from the root. Turborepo runs the matching script in each app, in
 dependency order, with the generate step first where needed.
 
-| Command          | Does                                                      |
-| ---------------- | --------------------------------------------------------- |
-| `pnpm dev`       | Air for the API and Vite for the web app, side by side    |
-| `pnpm build`     | Builds both apps into `apps/api/bin` and `apps/web/build` |
-| `pnpm check`     | `svelte-check` on the web app                             |
-| `pnpm lint`      | oxlint on the web app and `go vet` on the API             |
-| `pnpm test`      | Runs each app's tests                                     |
-| `pnpm fmt`       | oxfmt across the repo, then gofmt in the API              |
-| `pnpm fmt:check` | The same, without writing                                 |
-| `pnpm generate`  | OpenAPI document and docs assets for the API              |
+| Command          | Does                                                                    |
+| ---------------- | ----------------------------------------------------------------------- |
+| `pnpm dev`       | Air for the API and Vite for the web app, side by side                  |
+| `pnpm build`     | Builds both apps into `apps/api/bin` and `apps/web/build`               |
+| `pnpm check`     | `svelte-check` on the web app; the API checks `openapi.yaml` is current |
+| `pnpm lint`      | oxlint on the web app and `go vet` on the API                           |
+| `pnpm test`      | Runs each app's tests                                                   |
+| `pnpm fmt`       | oxfmt across the repo, then gofmt in the API                            |
+| `pnpm fmt:check` | The same, without writing                                               |
+| `pnpm generate`  | OpenAPI document and docs assets for the API                            |
 
 ## Layout
 
 ```
 apps/api/
+  generate.go         go generate directives: fetch the docs assets, then write openapi.yaml
   cmd/api/            Entry point: logging, signals, the server
   cmd/openapi/        Writes openapi.yaml; run by go generate
   internal/app/       Builds the router and Huma API from a Config
@@ -81,6 +82,7 @@ apps/api/
   internal/server/    HTTP server timeouts and the shutdown sequence
 apps/web/
   src/env.ts          Environment variables, validated with valibot
+  src/routes/+error.svelte  Error page
   src/hooks.server.ts Points the server's API client at API_URL; security headers; preloading
   src/app.css         Tailwind entry and the Inter font family
   src/lib/api/        Generated client, not committed
@@ -93,17 +95,17 @@ oxfmt.config.ts       Formatting at its defaults, with .svelte files through Pre
 
 ## The API
 
-| Variable               | Default       | Description                                                                  |
-| ---------------------- | ------------- | ---------------------------------------------------------------------------- |
-| `MODE`                 | `development` | `development`, `staging`, or `release`. Development runs Gin in debug mode.  |
-| `PORT`                 | `3101`        | Port to listen on. The image sets 8080.                                      |
-| `BASE_PATH`            | none          | URL prefix to mount under, for hosting under a subpath without a proxy.      |
-| `LOG_LEVEL`            | `info`        | `debug`, `info`, `warn`, or `error`.                                         |
-| `LOG_FORMAT`           | `text`        | `text` or `json`.                                                            |
-| `TRUSTED_PROXIES`      | none          | Comma-separated IPs or CIDRs whose `X-Forwarded-For` header is trusted.      |
+| Variable               | Default       | Description                                                                         |
+| ---------------------- | ------------- | ----------------------------------------------------------------------------------- |
+| `MODE`                 | `development` | `development`, `staging`, or `release`. Development runs Gin in debug mode.         |
+| `PORT`                 | `3101`        | Port to listen on. The image sets 8080.                                             |
+| `BASE_PATH`            | none          | URL prefix to mount under, for hosting under a subpath without a proxy.             |
+| `LOG_LEVEL`            | `info`        | `debug`, `info`, `warn`, or `error`.                                                |
+| `LOG_FORMAT`           | `text`        | `text` or `json`.                                                                   |
+| `TRUSTED_PROXIES`      | none          | Comma-separated IPs or CIDRs whose `X-Forwarded-For` header is trusted.             |
 | `CLIENT_IP_HEADER`     | none          | Header carrying the real client IP, e.g. `CF-Connecting-IP`. Trusted from any peer. |
-| `CORS_ALLOWED_ORIGINS` | none          | Comma-separated origins allowed from browsers, or `*`. Empty disables CORS.  |
-| `SHUTDOWN_DELAY`       | `15s`         | How long to keep serving after SIGTERM while `/readyz` fails. `0s` disables. |
+| `CORS_ALLOWED_ORIGINS` | none          | Comma-separated origins allowed from browsers, or `*`. Empty disables CORS.         |
+| `SHUTDOWN_DELAY`       | `15s`         | How long to keep serving after SIGTERM while `/readyz` fails. `0s` disables.        |
 
 | Route               | Purpose                                                    |
 | ------------------- | ---------------------------------------------------------- |

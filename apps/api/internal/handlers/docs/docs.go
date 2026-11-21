@@ -1,7 +1,8 @@
 // Package docs serves the API reference and the OpenAPI document behind it.
 // The reference is built from files embedded in the binary, so it works
 // without internet access; go generate fetches them into assets/ before the
-// first build, see fetch.go for the source and version.
+// first build, see fetch.go for the source and version and generate.go at the
+// module root for the order.
 package docs
 
 import (
@@ -12,8 +13,6 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 )
-
-//go:generate go run fetch.go
 
 //go:embed assets/web-components.min.js assets/styles.min.css
 var assets embed.FS
