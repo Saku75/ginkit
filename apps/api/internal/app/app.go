@@ -22,6 +22,7 @@ import (
 type Config struct {
 	Debug              bool
 	TrustedProxies     []string
+	ClientIPHeader     string
 	CORSAllowedOrigins []string
 	BasePath           string
 }
@@ -30,6 +31,7 @@ func ConfigFromEnv() Config {
 	return Config{
 		Debug:              env.Mode() == env.ModeDevelopment,
 		TrustedProxies:     env.TrustedProxies(),
+		ClientIPHeader:     env.ClientIPHeader(),
 		CORSAllowedOrigins: env.CORSAllowedOrigins(),
 		BasePath:           env.BasePath(),
 	}
@@ -49,6 +51,7 @@ func New(lifetime context.Context, cfg Config, checks ...handlers.Check) (*gin.E
 	if err := router.SetTrustedProxies(cfg.TrustedProxies); err != nil {
 		return nil, nil, fmt.Errorf("set trusted proxies: %w", err)
 	}
+	router.TrustedPlatform = cfg.ClientIPHeader
 	router.Use(sloggin.NewWithFilters(slog.Default(), sloggin.IgnorePath("/healthz", "/readyz")), gin.Recovery())
 
 	if len(cfg.CORSAllowedOrigins) > 0 {

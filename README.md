@@ -100,6 +100,7 @@ oxfmt.config.ts       Formatting at its defaults, with .svelte files through Pre
 | `LOG_LEVEL`            | `info`        | `debug`, `info`, `warn`, or `error`.                                         |
 | `LOG_FORMAT`           | `text`        | `text` or `json`.                                                            |
 | `TRUSTED_PROXIES`      | none          | Comma-separated IPs or CIDRs whose `X-Forwarded-For` header is trusted.      |
+| `CLIENT_IP_HEADER`     | none          | Header carrying the real client IP, e.g. `CF-Connecting-IP`. Trusted from any peer. |
 | `CORS_ALLOWED_ORIGINS` | none          | Comma-separated origins allowed from browsers, or `*`. Empty disables CORS.  |
 | `SHUTDOWN_DELAY`       | `15s`         | How long to keep serving after SIGTERM while `/readyz` fails. `0s` disables. |
 
