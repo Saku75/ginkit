@@ -1,6 +1,7 @@
-// Package docs serves the API reference from files embedded in the binary, so
-// it works without internet access. go generate fetches them into assets/
-// before the first build; see fetch.go for the source and version.
+// Package docs serves the API reference and the OpenAPI document behind it.
+// The reference is built from files embedded in the binary, so it works
+// without internet access; go generate fetches them into assets/ before the
+// first build, see fetch.go for the source and version.
 package docs
 
 import (
@@ -37,11 +38,16 @@ const page = `<!doctype html>
   </body>
 </html>`
 
-var prefixPattern = regexp.MustCompile(`^(/[A-Za-z0-9._~-]+)+$`)
+var (
+	prefixPattern = regexp.MustCompile(`^(/[A-Za-z0-9._~-]+)+$`)
+	hostPattern   = regexp.MustCompile(`^[A-Za-z0-9.-]+(:[0-9]+)?$`)
+)
 
-// Register serves the docs page at basePath itself, or at / when it is empty,
-// with its assets under basePath/assets. Links honor X-Forwarded-Prefix, which
-// a reverse proxy sets when it strips a prefix such as /api before forwarding.
+// Register serves the reference at basePath itself, or at / when it is empty,
+// its assets under basePath/assets, and the OpenAPI document at
+// basePath/openapi.yaml and .json. Links and the document's server URL honor
+// X-Forwarded-Prefix, -Host and -Proto, which a reverse proxy sets when it
+// strips a prefix such as /api, so "Try it" reaches the API through the proxy.
 func Register(api huma.API, basePath string) {
 	title := "API Reference"
 	if info := api.OpenAPI().Info; info != nil && info.Title != "" {
@@ -74,6 +80,51 @@ func Register(api huma.API, basePath string) {
 	})
 	serve(adapter, basePath+"/assets/styles.min.css", "styles.min.css", "text/css; charset=utf-8")
 	serve(adapter, basePath+"/assets/web-components.min.js", "web-components.min.js", "text/javascript; charset=utf-8")
+
+	adapter.Handle(&huma.Operation{Method: http.MethodGet, Path: basePath + "/openapi.yaml"}, func(ctx huma.Context) {
+		doc := document(api, publicBase(ctx, basePath))
+		body, err := doc.YAML()
+		if err != nil {
+			ctx.SetStatus(http.StatusInternalServerError)
+			return
+		}
+		ctx.SetHeader("Content-Type", "application/vnd.oai.openapi+yaml")
+		ctx.BodyWriter().Write(body)
+	})
+	adapter.Handle(&huma.Operation{Method: http.MethodGet, Path: basePath + "/openapi.json"}, func(ctx huma.Context) {
+		doc := document(api, publicBase(ctx, basePath))
+		body, err := doc.MarshalJSON()
+		if err != nil {
+			ctx.SetStatus(http.StatusInternalServerError)
+			return
+		}
+		ctx.SetHeader("Content-Type", "application/vnd.oai.openapi+json")
+		ctx.BodyWriter().Write(body)
+	})
+}
+
+// document is a copy of the API's document with the server set to where the
+// caller reached it, so the shared document that go generate writes stays
+// free of any server.
+func document(api huma.API, server string) *huma.OpenAPI {
+	doc := *api.OpenAPI()
+	doc.Servers = []*huma.Server{{URL: server}}
+	return &doc
+}
+
+func publicBase(ctx huma.Context, basePath string) string {
+	scheme := "http"
+	if ctx.TLS() != nil {
+		scheme = "https"
+	}
+	if p := ctx.Header("X-Forwarded-Proto"); p == "http" || p == "https" {
+		scheme = p
+	}
+	host := ctx.Host()
+	if h := ctx.Header("X-Forwarded-Host"); hostPattern.MatchString(h) {
+		host = h
+	}
+	return scheme + "://" + host + forwardedPrefix(ctx) + basePath
 }
 
 func forwardedPrefix(ctx huma.Context) string {

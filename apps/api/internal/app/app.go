@@ -62,8 +62,8 @@ func New(lifetime context.Context, cfg Config, checks ...handlers.Check) (*gin.E
 	}
 
 	hc := huma.DefaultConfig("Ginkit API", "1.0.0")
-	hc.DocsPath = "" // Served from embedded files instead; see handlers/docs.
-	hc.OpenAPIPath = cfg.BasePath + "/openapi"
+	hc.DocsPath = ""    // Both are served by handlers/docs, which knows the
+	hc.OpenAPIPath = "" // public base URL behind a proxy.
 	hc.SchemasPath = cfg.BasePath + "/schemas"
 	api := humagin.New(router, hc)
 	handlers.Register(lifetime, api, cfg.BasePath, checks...)

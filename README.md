@@ -40,8 +40,9 @@ grep -rl '@ginkit/' --include='*.json' --include='*.ts' --include='Dockerfile' .
   prefix and forwards to the API on 3101, the same as a reverse proxy does in
   production. There is no CORS to configure.
 - **The API serves at `/`** and does not know about the prefix. The proxy
-  sends `X-Forwarded-Prefix: /api`, which the docs page uses for its links, so
-  the reference works both at the API's own address and under `/api`.
+  sends `X-Forwarded-Prefix: /api`, which the docs page uses for its links and
+  the OpenAPI document for its server URL, so the reference and its "Try it"
+  work both at the API's own address and under `/api`.
 - **Server-side rendering calls the API directly** at `API_URL`, declared and
   validated in `apps/web/src/env.ts`. A relative URL would never reach the
   proxy from inside SvelteKit's server.
