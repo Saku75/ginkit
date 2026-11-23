@@ -62,9 +62,16 @@ func New(lifetime context.Context, cfg Config, checks ...handlers.Check) (*gin.E
 	}
 
 	hc := huma.DefaultConfig("Ginkit API", "1.0.0")
-	hc.DocsPath = ""     // Both are served by handlers/docs, which knows the
-	hc.OpenAPIPath = ""  // public base URL behind a proxy.
-	hc.CreateHooks = nil // Keeps /schemas but drops the $schema links, which cannot know that URL.
+	hc.DocsPath = ""    // Both are served by handlers/docs, which knows the
+	hc.OpenAPIPath = "" // public base URL behind a proxy.
+	// Declare $schema on every response schema, so JSON files that point at
+	// /schemas validate in editors, but leave it out of responses: the link
+	// could not know the public URL behind a proxy.
+	hc.CreateHooks = []func(huma.Config) huma.Config{func(c huma.Config) huma.Config {
+		links := huma.NewSchemaLinkTransformer("#/components/schemas/", c.SchemasPath)
+		c.OnAddOperation = append(c.OnAddOperation, links.OnAddOperation)
+		return c
+	}}
 	hc.SchemasPath = cfg.BasePath + "/schemas"
 	api := humagin.New(router, hc)
 	handlers.Register(lifetime, api, cfg.BasePath, checks...)
