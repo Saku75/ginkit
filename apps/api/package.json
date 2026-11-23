@@ -12,8 +12,8 @@
     "start": "./bin/api",
     "test": "go test ./...",
     "lint": "go vet ./...",
-    "fmt": "gofmt -l -w cmd internal",
-    "fmt:check": "test -z \"$(gofmt -l cmd internal)\"",
+    "fmt": "gofmt -l -w .",
+    "fmt:check": "test -z \"$(gofmt -l .)\"",
     "tidy": "go mod tidy",
     "docker:build": "docker build -t ginkit-api ."
   }
