@@ -12,6 +12,7 @@ import (
 	"ginkit/api/internal/env"
 	"ginkit/api/internal/logger"
 	"ginkit/api/internal/server"
+	"ginkit/api/internal/version"
 )
 
 func main() {
@@ -25,6 +26,7 @@ func main() {
 // checks, or anything that needs the application's lifetime context.
 func run() error {
 	logger.Setup()
+	slog.Info("starting", slog.String("version", version.Version))
 	ctx := shutdownContext()
 
 	// Readiness checks go here; see handlers.Check.

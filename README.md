@@ -17,12 +17,12 @@ pnpm dev
 
 That starts both apps:
 
-| What          | Where                                                                          |
-| ------------- | ------------------------------------------------------------------------------ |
-| Web app       | <http://localhost:3100>                                                        |
-| API reference | <http://localhost:3100/api>, proxied to the API                                |
-| API, directly | <http://localhost:3101>                                                        |
-| Probes        | <http://localhost:3101/healthz> and `/readyz`; <http://localhost:3100/healthz> |
+| What          | Where                                                                                |
+| ------------- | ------------------------------------------------------------------------------------ |
+| Web app       | <http://localhost:3100>                                                              |
+| API reference | <http://localhost:3100/api>, proxied to the API                                      |
+| API, directly | <http://localhost:3101>                                                              |
+| Probes        | `/healthz` and `/readyz` on both <http://localhost:3101> and <http://localhost:3100> |
 
 No `.env` files are needed in development. Each app has a `.env.example`
 listing the variables it reads, with the defaults already set to these values.
@@ -57,16 +57,17 @@ grep -rl '@ginkit/' --include='*.json' --include='*.ts' --include='Dockerfile' .
 Run these from the root. Turborepo runs the matching script in each app, in
 dependency order, with the generate step first where needed.
 
-| Command          | Does                                                                    |
-| ---------------- | ----------------------------------------------------------------------- |
-| `pnpm dev`       | Air for the API and Vite for the web app, side by side                  |
-| `pnpm build`     | Builds both apps into `apps/api/bin` and `apps/web/build`               |
-| `pnpm check`     | `svelte-check` on the web app; the API checks `openapi.yaml` is current |
-| `pnpm lint`      | oxlint on the web app and `go vet` on the API                           |
-| `pnpm test`      | Runs each app's tests                                                   |
-| `pnpm fmt`       | oxfmt across the repo, then gofmt in the API                            |
-| `pnpm fmt:check` | The same, without writing                                               |
-| `pnpm generate`  | OpenAPI document and docs assets for the API                            |
+| Command             | Does                                                                    |
+| ------------------- | ----------------------------------------------------------------------- |
+| `pnpm dev`          | Air for the API and Vite for the web app, side by side                  |
+| `pnpm build`        | Builds both apps into `apps/api/bin` and `apps/web/build`               |
+| `pnpm docker:build` | Builds both images with one version; see Versioning                     |
+| `pnpm check`        | `svelte-check` on the web app; the API checks `openapi.yaml` is current |
+| `pnpm lint`         | oxlint on the web app and `go vet` on the API                           |
+| `pnpm test`         | Runs each app's tests                                                   |
+| `pnpm fmt`          | oxfmt across the repo, then gofmt in the API                            |
+| `pnpm fmt:check`    | The same, without writing                                               |
+| `pnpm generate`     | OpenAPI document and docs assets for the API                            |
 
 ## Layout
 
@@ -80,6 +81,7 @@ apps/api/
   internal/handlers/  Probes, the docs page, and one subpackage per API version
   internal/logger/    slog setup from LOG_LEVEL and LOG_FORMAT
   internal/server/    HTTP server timeouts and the shutdown sequence
+  internal/version/   Build version, set by ldflags
 apps/web/
   src/env.ts          Environment variables, validated with valibot
   src/routes/+error.svelte  Error page
@@ -88,6 +90,7 @@ apps/web/
   src/lib/api/        Generated client, not committed
   src/lib/api-config.ts  Base URL for the browser's client
 packages/             Empty until something is shared between the apps
+scripts/              build-images.sh builds both images with one version
 turbo.json            Task graph
 AGENTS.md             Conventions for contributors and coding agents
 oxlint.config.ts      Lint rules at their defaults. .svelte files are linted in their script blocks.
@@ -127,7 +130,16 @@ from `handlers.Register`. A readiness check: pass a `handlers.Check` to
 
 Environment variables are declared in `src/env.ts` with a valibot schema each
 and read from `$app/env/private` or `$app/env/public`. SvelteKit validates
-them at startup. `API_URL` is the only one so far.
+them at startup.
+
+| Variable      | Default                 | Description                                           |
+| ------------- | ----------------------- | ----------------------------------------------------- |
+| `API_URL`     | `http://localhost:3101` | Where server-side rendering reaches the API.          |
+| `APP_VERSION` | `dev`                   | Build version, inlined at build time. See Versioning. |
+
+`/healthz` answers 200 while the app is up. `/readyz` calls the API's
+`/healthz` and answers 503 while the API is unreachable or reports a different
+build version.
 
 Call the API through the generated functions, one per operation and named
 after its operation ID. Pass SvelteKit's `fetch` in load functions:
@@ -146,6 +158,24 @@ The root layout imports Inter from `@fontsource-variable/inter` and
 preloads the Latin font file along with scripts and styles. Everything the app
 needs at runtime is bundled, so keep packages in `devDependencies`; anything in
 `dependencies` would have to be installed into the image separately.
+
+## Versioning
+
+The two apps are released in lockstep: one version string is built into both
+images, and the web app refuses to become ready until the API it talks to
+reports the same one, so a rolling deploy holds web traffic until the API has
+rolled too. Locally everything reports `dev`.
+
+```sh
+pnpm docker:build          # version from git describe --tags --always --dirty
+pnpm docker:build 1.4.0    # or an explicit one
+```
+
+That runs `scripts/build-images.sh`, which passes the same `VERSION` build
+argument to both Dockerfiles. The API embeds it with `ldflags` into
+`internal/version` and reports it from `/healthz`; the web app inlines it as
+`APP_VERSION` at build time. Building one image on its own takes the same
+argument: `docker build --build-arg VERSION=1.4.0 ...`.
 
 ## Deploying
 
@@ -166,8 +196,7 @@ Put a reverse proxy in front. Route `/api/*` to the API with the prefix
 stripped and `X-Forwarded-Prefix: /api` added, which Traefik's StripPrefix
 middleware does on its own and Caddy does with `handle_path` plus `header_up`.
 Or give the API its own domain, where it needs no proxy at all. Point
-Kubernetes probes at the API container's `/healthz` and `/readyz`, and at the
-web container's `/healthz`.
+Kubernetes probes at `/healthz` and `/readyz` on both containers.
 
 On SIGINT or SIGTERM the API fails `/readyz` at once, keeps serving for
 `SHUTDOWN_DELAY`, then stops accepting connections and gives in-flight requests

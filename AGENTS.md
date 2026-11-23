@@ -13,6 +13,8 @@ explains what the pieces are; this file is about how to change them.
   `apps/web/src/lib/api` is generated from it and is not committed.
 - Before committing run `pnpm fmt`, `pnpm lint`, `pnpm check`, and
   `pnpm build`.
+- Images are built together by `pnpm docker:build`, which gives both the same
+  version. The web app's `/readyz` fails when the API's version differs.
 
 ## Code
 

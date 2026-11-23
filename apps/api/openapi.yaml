@@ -91,8 +91,12 @@ components:
           enum:
             - ok
           type: string
+        version:
+          description: Build version, the same for the API and web images of one release.
+          type: string
       required:
         - status
+        - version
       type: object
     ReadyzOutputBody:
       additionalProperties: false

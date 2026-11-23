@@ -10,6 +10,7 @@
     },
     "build": {
       "dependsOn": ["^build", "generate", "^generate"],
+      "env": ["VERSION", "APP_VERSION"],
       "outputs": ["bin/**", "build/**", ".svelte-kit/**"]
     },
     "dev": {

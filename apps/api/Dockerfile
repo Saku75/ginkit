@@ -3,6 +3,8 @@
 FROM golang:1.27-alpine AS build
 # npm registry the docs assets are fetched from.
 ARG NPM_REGISTRY=https://registry.npmjs.org
+# Build version, reported by /healthz. scripts/build-images.sh passes the same one to both images.
+ARG VERSION=dev
 WORKDIR /src
 COPY go.mod go.sum ./
 COPY cmd/ cmd/
@@ -10,7 +12,7 @@ COPY internal/ internal/
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     go run ./internal/handlers/docs/fetch.go -o internal/handlers/docs/assets && \
-    CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/api ./cmd/api
+    CGO_ENABLED=0 go build -trimpath -ldflags="-s -w -X ginkit/api/internal/version.Version=${VERSION}" -o /out/api ./cmd/api
 
 FROM gcr.io/distroless/static-debian13:nonroot
 COPY --from=build /out/api /api

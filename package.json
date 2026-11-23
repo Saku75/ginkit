@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",
+    "docker:build": "scripts/build-images.sh",
     "generate": "turbo run generate",
     "check": "turbo run check",
     "test": "turbo run test",

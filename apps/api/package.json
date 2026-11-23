@@ -7,14 +7,13 @@
   "scripts": {
     "dev": "go tool air",
     "generate": "go generate ./...",
-    "build": "go generate ./... && go build -o bin/api ./cmd/api",
+    "build": "go generate ./... && go build -ldflags \"-X ginkit/api/internal/version.Version=${VERSION:-dev}\" -o bin/api ./cmd/api",
     "check": "go generate ./... && git diff --exit-code -- openapi.yaml",
     "start": "./bin/api",
     "test": "go test ./...",
     "lint": "go vet ./...",
     "fmt": "gofmt -l -w .",
     "fmt:check": "test -z \"$(gofmt -l .)\"",
-    "tidy": "go mod tidy",
-    "docker:build": "docker build -t ginkit-api ."
+    "tidy": "go mod tidy"
   }
 }

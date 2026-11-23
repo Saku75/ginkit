@@ -10,12 +10,14 @@ COPY . .
 RUN turbo prune @ginkit/web --docker
 
 FROM base AS builder
+# Build version, compared against the API's by /readyz. scripts/build-images.sh passes the same one to both images.
+ARG VERSION=dev
 WORKDIR /repo
 COPY --from=pruner /repo/out/json/ .
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store pnpm install --frozen-lockfile
 COPY --from=pruner /repo/out/full/ .
 # Generates the client from the committed apps/api/openapi.yaml, so no Go toolchain is needed.
-RUN pnpm --filter @ginkit/web build
+RUN APP_VERSION=${VERSION} pnpm --filter @ginkit/web build
 
 FROM gcr.io/distroless/nodejs24-debian13:nonroot
 WORKDIR /app
