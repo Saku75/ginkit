@@ -17,12 +17,12 @@ pnpm dev
 
 That starts both apps:
 
-| What          | Where                                           |
-| ------------- | ----------------------------------------------- |
-| Web app       | <http://localhost:3100>                         |
-| API reference | <http://localhost:3100/api>, proxied to the API |
-| API, directly | <http://localhost:3101>                         |
-| Probes        | <http://localhost:3101/healthz> and `/readyz`   |
+| What          | Where                                                                          |
+| ------------- | ------------------------------------------------------------------------------ |
+| Web app       | <http://localhost:3100>                                                        |
+| API reference | <http://localhost:3100/api>, proxied to the API                                |
+| API, directly | <http://localhost:3101>                                                        |
+| Probes        | <http://localhost:3101/healthz> and `/readyz`; <http://localhost:3100/healthz> |
 
 No `.env` files are needed in development. Each app has a `.env.example`
 listing the variables it reads, with the defaults already set to these values.
@@ -89,6 +89,7 @@ apps/web/
   src/lib/api-config.ts  Base URL for the browser's client
 packages/             Empty until something is shared between the apps
 turbo.json            Task graph
+AGENTS.md             Conventions for contributors and coding agents
 oxlint.config.ts      Lint rules at their defaults. .svelte files are linted in their script blocks.
 oxfmt.config.ts       Formatting at its defaults, with .svelte files through Prettier's Svelte plugin.
 ```
@@ -165,7 +166,8 @@ Put a reverse proxy in front. Route `/api/*` to the API with the prefix
 stripped and `X-Forwarded-Prefix: /api` added, which Traefik's StripPrefix
 middleware does on its own and Caddy does with `handle_path` plus `header_up`.
 Or give the API its own domain, where it needs no proxy at all. Point
-Kubernetes probes at the API container's `/healthz` and `/readyz`.
+Kubernetes probes at the API container's `/healthz` and `/readyz`, and at the
+web container's `/healthz`.
 
 On SIGINT or SIGTERM the API fails `/readyz` at once, keeps serving for
 `SHUTDOWN_DELAY`, then stops accepting connections and gives in-flight requests
