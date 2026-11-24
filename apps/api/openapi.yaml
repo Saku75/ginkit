@@ -1,5 +1,30 @@
 components:
   schemas:
+    Customer:
+      additionalProperties: true
+      properties:
+        country:
+          description: ISO 3166-1 alpha-2 code.
+          examples:
+            - DK
+          pattern: ^[A-Z]{2}$
+          type: string
+        email:
+          examples:
+            - ada@example.com
+          format: email
+          type: string
+        name:
+          examples:
+            - Ada Lovelace
+          maxLength: 100
+          minLength: 1
+          type: string
+      required:
+        - name
+        - email
+        - country
+      type: object
     ErrorDetail:
       additionalProperties: false
       properties:
@@ -76,6 +101,41 @@ components:
       required:
         - message
       type: object
+    GetPriceOutputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/GetPriceOutputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        amount:
+          examples:
+            - 97.36
+          format: double
+          type: number
+        currency:
+          examples:
+            - USD
+          type: string
+        productId:
+          examples:
+            - p-1001
+          type: string
+        rate:
+          description: EUR to currency rate applied.
+          examples:
+            - 1.094
+          format: double
+          type: number
+      required:
+        - productId
+        - currency
+        - amount
+        - rate
+      type: object
     HealthzOutputBody:
       additionalProperties: false
       properties:
@@ -97,6 +157,186 @@ components:
       required:
         - status
         - version
+      type: object
+    ListProductsOutputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/ListProductsOutputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        items:
+          items:
+            $ref: "#/components/schemas/Product"
+          type:
+            - array
+            - "null"
+      required:
+        - items
+      type: object
+    Product:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/Product.json
+          format: uri
+          readOnly: true
+          type: string
+        id:
+          examples:
+            - p-1001
+          pattern: ^p-[0-9]+$
+          type: string
+        name:
+          examples:
+            - Keyboard
+          type: string
+        price:
+          description: Price in EUR.
+          examples:
+            - 89
+          format: double
+          minimum: 0
+          type: number
+        tags:
+          items:
+            type: string
+          type:
+            - array
+            - "null"
+      required:
+        - id
+        - name
+        - price
+      type: object
+    Quote:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/Quote.json
+          format: uri
+          readOnly: true
+          type: string
+        currency:
+          enum:
+            - EUR
+          type: string
+        discount:
+          format: double
+          type: number
+        expiresAt:
+          format: date-time
+          type: string
+        lines:
+          items:
+            $ref: "#/components/schemas/QuoteItem"
+          type:
+            - array
+            - "null"
+        shipping:
+          format: double
+          type: number
+        subtotal:
+          format: double
+          type: number
+        total:
+          format: double
+          type: number
+      required:
+        - currency
+        - lines
+        - subtotal
+        - discount
+        - shipping
+        - total
+        - expiresAt
+      type: object
+    QuoteItem:
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+        productId:
+          type: string
+        quantity:
+          format: int64
+          type: integer
+        total:
+          format: double
+          type: number
+        unitPrice:
+          format: double
+          type: number
+      required:
+        - productId
+        - name
+        - quantity
+        - unitPrice
+        - total
+      type: object
+    QuoteLine:
+      additionalProperties: false
+      properties:
+        productId:
+          examples:
+            - p-1001
+          pattern: ^p-[0-9]+$
+          type: string
+        quantity:
+          examples:
+            - 2
+          format: int64
+          maximum: 999
+          minimum: 1
+          type: integer
+      required:
+        - productId
+        - quantity
+      type: object
+    QuoteRequest:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/QuoteRequest.json
+          format: uri
+          readOnly: true
+          type: string
+        coupon:
+          description: SAVE10 is the only code the example knows.
+          pattern: ^[A-Z0-9]{4,12}$
+          type: string
+        customer:
+          $ref: "#/components/schemas/Customer"
+        lines:
+          items:
+            $ref: "#/components/schemas/QuoteLine"
+          maxItems: 50
+          minItems: 1
+          type:
+            - array
+            - "null"
+        notes:
+          additionalProperties: {}
+          description: Any object the client wants to attach.
+          type: object
+        shipping:
+          default: standard
+          enum:
+            - standard
+            - express
+          type: string
+      required:
+        - lines
+        - customer
       type: object
     ReadyzOutputBody:
       additionalProperties: false
@@ -226,5 +466,178 @@ paths:
                 $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Example v1 route
+      tags:
+        - v1
+  /v1/products:
+    get:
+      description: Filters and pages through query parameters and reports the unpaged count in a header.
+      operationId: v1-list-products
+      parameters:
+        - description: Only products carrying this tag.
+          explode: false
+          in: query
+          name: tag
+          schema:
+            description: Only products carrying this tag.
+            type: string
+        - explode: false
+          in: query
+          name: limit
+          schema:
+            default: 20
+            format: int64
+            maximum: 100
+            minimum: 1
+            type: integer
+        - explode: false
+          in: query
+          name: offset
+          schema:
+            default: 0
+            format: int64
+            minimum: 0
+            type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListProductsOutputBody"
+          description: OK
+          headers:
+            X-Total-Count:
+              schema:
+                description: Matching products before paging.
+                format: int64
+                type: integer
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: List products
+      tags:
+        - v1
+  /v1/products/{id}:
+    get:
+      operationId: v1-get-product
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            examples:
+              - p-1001
+            pattern: ^p-[0-9]+$
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+          description: OK
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Internal Server Error
+      summary: Get a product
+      tags:
+        - v1
+  /v1/products/{id}/price:
+    get:
+      description: Converts the EUR price with a rate from the exchange-rate client that main builds once.
+      operationId: v1-get-product-price
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            examples:
+              - p-1001
+            pattern: ^p-[0-9]+$
+            type: string
+        - description: ISO 4217 code to quote the price in.
+          explode: false
+          in: query
+          name: currency
+          schema:
+            default: EUR
+            description: ISO 4217 code to quote the price in.
+            pattern: ^[A-Z]{3}$
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetPriceOutputBody"
+          description: OK
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Internal Server Error
+        "502":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Bad Gateway
+      summary: Price in a currency
+      tags:
+        - v1
+  /v1/quotes:
+    post:
+      description: Validates the body against QuoteRequest and prices it from the catalog. Nothing is stored.
+      operationId: v1-create-quote
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuoteRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Quote"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Quote an order
       tags:
         - v1

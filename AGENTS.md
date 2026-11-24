@@ -29,6 +29,10 @@ explains what the pieces are; this file is about how to change them.
 - API routes live in a subpackage per version under
   `apps/api/internal/handlers`; a new one is a file with a register function
   called from that version's `Register`.
+- A client for another service is a package under `apps/api/internal/clients`,
+  built once in `cmd/api/main.go` and set on `handlers.Dependencies`. The
+  version that calls it takes an interface it declares, never the concrete
+  client, so handlers stay testable with a fake.
 - In the web app, `#lib` imports end in `.js`, SvelteKit types come from
   `@sveltejs/kit/hooks`, and everything is a devDependency because the
   build bundles it.

@@ -4,12 +4,16 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"ginkit/api/internal/app"
+	"ginkit/api/internal/clients/rates"
 	"ginkit/api/internal/env"
+	"ginkit/api/internal/handlers"
 	"ginkit/api/internal/logger"
 	"ginkit/api/internal/server"
 	"ginkit/api/internal/version"
@@ -29,8 +33,12 @@ func run() error {
 	slog.Info("starting", slog.String("version", version.Version))
 	ctx := shutdownContext()
 
-	// Readiness checks go here; see handlers.Check.
-	router, _, err := app.New(ctx, app.ConfigFromEnv())
+	// Clients are built once here and reach handlers through Dependencies.
+	// Readiness checks follow them as further arguments; see handlers.Check.
+	deps := handlers.Dependencies{
+		Rates: rates.New(env.RatesAPIURL(), &http.Client{Timeout: 5 * time.Second}),
+	}
+	router, _, err := app.New(ctx, app.ConfigFromEnv(), deps)
 	if err != nil {
 		return err
 	}

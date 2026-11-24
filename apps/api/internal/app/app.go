@@ -37,9 +37,9 @@ func ConfigFromEnv() Config {
 	}
 }
 
-// New builds the router. Pass one handlers.Check per dependency the service
-// needs before it can take traffic.
-func New(lifetime context.Context, cfg Config, checks ...handlers.Check) (*gin.Engine, huma.API, error) {
+// New builds the router. deps carries the clients handlers call; pass one
+// handlers.Check per dependency the service needs before it can take traffic.
+func New(lifetime context.Context, cfg Config, deps handlers.Dependencies, checks ...handlers.Check) (*gin.Engine, huma.API, error) {
 	// gin.SetMode must run before gin.New.
 	if cfg.Debug {
 		gin.SetMode(gin.DebugMode)
@@ -74,7 +74,7 @@ func New(lifetime context.Context, cfg Config, checks ...handlers.Check) (*gin.E
 	}}
 	hc.SchemasPath = cfg.BasePath + "/schemas"
 	api := humagin.New(router, hc)
-	handlers.Register(lifetime, api, cfg.BasePath, checks...)
+	handlers.Register(lifetime, api, cfg.BasePath, deps, checks...)
 
 	return router, api, nil
 }

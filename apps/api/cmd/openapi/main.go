@@ -10,6 +10,7 @@ import (
 	"os"
 
 	"ginkit/api/internal/app"
+	"ginkit/api/internal/handlers"
 )
 
 func main() {
@@ -23,7 +24,7 @@ func main() {
 }
 
 func run(out string) error {
-	_, api, err := app.New(context.Background(), app.Config{})
+	_, api, err := app.New(context.Background(), app.Config{}, handlers.Dependencies{})
 	if err != nil {
 		return err
 	}
