@@ -140,9 +140,15 @@ calls it declares the interface it needs, as `v1.Rates` does, and
 
 The products and quotes routes are examples to delete. `POST /v1/quotes`
 shows how a body controls unknown properties: the request object is strict,
-which Huma does by default; `lines` is a list of one known shape; `customer`
-allows extra properties through a `_` field tagged
-`additionalProperties:"true"`; and `notes` is a map that takes any object.
+which Huma does by default; `lines` is a list of one known shape; `notes` is
+a map that takes any object; and `customer` allows extra properties through
+a `_` field tagged `additionalProperties:"true"`. Allowing them is not
+enough to keep them: a struct drops properties it has no field for. So
+`Customer` also has an `Extra map[string]any` tagged `json:",embed"`, which
+`encoding/json/v2` fills with every unknown member and writes back on output,
+and `hidden:"true"`, which keeps it out of the schema. The quote echoes the
+customer back with the extras intact. The API reads and writes JSON with
+`encoding/json/v2` for this, configured in `internal/app`.
 
 ## The web app
 

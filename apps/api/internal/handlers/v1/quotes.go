@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -12,9 +13,8 @@ import (
 // QuoteRequest shows the three ways a body can treat properties it does not
 // declare. The request itself is strict, which is Huma's default for structs:
 // an unknown property fails validation. Lines takes only the QuoteLine shape.
-// Customer opts back in through its `_` field, so clients may send more than
-// is declared; those extras pass validation but are dropped on decoding, so a
-// map like Notes is the way to keep them.
+// Customer accepts extra properties and keeps them; see its Extra field. Notes
+// takes any object at all.
 type QuoteRequest struct {
 	Lines    []QuoteLine    `json:"lines" minItems:"1" maxItems:"50"`
 	Customer Customer       `json:"customer"`
@@ -28,15 +28,22 @@ type QuoteLine struct {
 	Quantity  int    `json:"quantity" minimum:"1" maximum:"999" example:"2"`
 }
 
+// Customer allows properties it does not declare, through the `_` tag, and
+// keeps them: encoding/json/v2 fills the embedded Extra map with every unknown
+// member and writes them back on output, so the object survives a round trip
+// with modifications. hidden keeps Extra out of the schema. Without such a
+// field, unknown properties pass validation and are dropped on decoding.
 type Customer struct {
-	_       struct{} `json:"-" additionalProperties:"true"`
-	Name    string   `json:"name" minLength:"1" maxLength:"100" example:"Ada Lovelace"`
-	Email   string   `json:"email" format:"email" example:"ada@example.com"`
-	Country string   `json:"country" pattern:"^[A-Z]{2}$" example:"DK" doc:"ISO 3166-1 alpha-2 code."`
+	_       struct{}       `json:"-" additionalProperties:"true"`
+	Name    string         `json:"name" minLength:"1" maxLength:"100" example:"Ada Lovelace"`
+	Email   string         `json:"email" format:"email" example:"ada@example.com"`
+	Country string         `json:"country" pattern:"^[A-Z]{2}$" example:"DK" doc:"ISO 3166-1 alpha-2 code."`
+	Extra   map[string]any `json:",embed" hidden:"true"`
 }
 
 type Quote struct {
 	Currency  string      `json:"currency" enum:"EUR"`
+	Customer  Customer    `json:"customer" doc:"The request's customer, with the email normalized and any extra properties kept."`
 	Lines     []QuoteItem `json:"lines"`
 	Subtotal  float64     `json:"subtotal"`
 	Discount  float64     `json:"discount"`
@@ -74,7 +81,8 @@ func registerQuotes(api huma.API) {
 		Tags:        []string{"v1"},
 	}, func(_ context.Context, in *quoteInput) (*quoteOutput, error) {
 		var problems []error
-		quote := Quote{Currency: "EUR", Lines: make([]QuoteItem, 0, len(in.Body.Lines))}
+		quote := Quote{Currency: "EUR", Customer: in.Body.Customer, Lines: make([]QuoteItem, 0, len(in.Body.Lines))}
+		quote.Customer.Email = strings.ToLower(quote.Customer.Email)
 
 		for i, line := range in.Body.Lines {
 			p, ok := findProduct(line.ProductID)

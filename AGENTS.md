@@ -26,6 +26,9 @@ explains what the pieces are; this file is about how to change them.
   through `lookup`, plus a row in the README table and a line in
   `.env.example`. The web app declares its variables in `src/env.ts` with a
   valibot schema.
+- JSON bodies go through `encoding/json/v2`, configured in `internal/app`. A
+  struct that must keep properties it does not declare pairs
+  `_ struct{} \`additionalProperties:"true"\``with`Extra map[string]any \`json:",embed" hidden:"true"\``, as `v1.Customer` does.
 - API routes live in a subpackage per version under
   `apps/api/internal/handlers`; a new one is a file with a register function
   called from that version's `Register`.

@@ -4,7 +4,9 @@ package app
 
 import (
 	"context"
+	"encoding/json/v2"
 	"fmt"
+	"io"
 	"log/slog"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -25,6 +27,14 @@ type Config struct {
 	ClientIPHeader     string
 	CORSAllowedOrigins []string
 	BasePath           string
+}
+
+// jsonFormat reads and writes bodies with encoding/json/v2. Besides stricter
+// decoding, it lets a struct keep properties it does not declare in a map
+// tagged `json:",embed"`; v1.Customer shows the pattern.
+var jsonFormat = huma.Format{
+	Marshal:   func(w io.Writer, v any) error { return json.MarshalWrite(w, v) },
+	Unmarshal: func(data []byte, v any) error { return json.Unmarshal(data, v) },
 }
 
 func ConfigFromEnv() Config {
@@ -62,6 +72,7 @@ func New(lifetime context.Context, cfg Config, deps handlers.Dependencies, check
 	}
 
 	hc := huma.DefaultConfig("Ginkit API", "1.0.0")
+	hc.Formats = map[string]huma.Format{"application/json": jsonFormat, "json": jsonFormat}
 	hc.DocsPath = ""    // Both are served by handlers/docs, which knows the
 	hc.OpenAPIPath = "" // public base URL behind a proxy.
 	// Declare $schema on every response schema, so JSON files that point at

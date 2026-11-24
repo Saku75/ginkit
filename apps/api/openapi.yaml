@@ -228,6 +228,9 @@ components:
           enum:
             - EUR
           type: string
+        customer:
+          $ref: "#/components/schemas/Customer"
+          description: The request's customer, with the email normalized and any extra properties kept.
         discount:
           format: double
           type: number
@@ -251,6 +254,7 @@ components:
           type: number
       required:
         - currency
+        - customer
         - lines
         - subtotal
         - discount
