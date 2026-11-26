@@ -7,6 +7,14 @@ export const variables = defineEnvVars({
     description:
       "Where server-side rendering reaches the API. The browser uses /api on its own origin.",
   },
+  LOG_LEVEL: {
+    schema: v.optional(v.picklist(["debug", "info", "warn", "error"]), "info"),
+    description: "Lowest level written to the log. debug also logs probe requests.",
+  },
+  LOG_FORMAT: {
+    schema: v.optional(v.picklist(["text", "json"]), "text"),
+    description: "text for people, json for log pipelines; the same two shapes as the API.",
+  },
   APP_VERSION: {
     static: true,
     schema: v.optional(v.string(), "dev"),

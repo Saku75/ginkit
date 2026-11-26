@@ -39,6 +39,8 @@ explains what the pieces are; this file is about how to change them.
 - In the web app, `#lib` imports end in `.js`, SvelteKit types come from
   `@sveltejs/kit/hooks`, and everything is a devDependency because the
   build bundles it.
+- The web app logs through `src/lib/server/log.ts`, which writes the same
+  text and JSON shapes as the API's slog. Do not use `console` on the server.
 - Server-side code in the web app calls the API through the client set up in
   `src/hooks.server.ts`, with the client's own fetch. Passing SvelteKit's
   `fetch` adds an `Origin` header that the API's CORS rejects.

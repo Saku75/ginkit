@@ -158,10 +158,17 @@ Environment variables are declared in `src/env.ts` with a valibot schema each
 and read from `$app/env/private` or `$app/env/public`. SvelteKit validates
 them at startup.
 
-| Variable      | Default                 | Description                                           |
-| ------------- | ----------------------- | ----------------------------------------------------- |
-| `API_URL`     | `http://localhost:3101` | Where server-side rendering reaches the API.          |
-| `APP_VERSION` | `dev`                   | Build version, inlined at build time. See Versioning. |
+| Variable      | Default                 | Description                                                            |
+| ------------- | ----------------------- | ---------------------------------------------------------------------- |
+| `API_URL`     | `http://localhost:3101` | Where server-side rendering reaches the API.                           |
+| `LOG_LEVEL`   | `info`                  | `debug`, `info`, `warn`, or `error`. `debug` also logs probe requests. |
+| `LOG_FORMAT`  | `text`                  | `text` or `json`, the same two shapes as the API.                      |
+| `APP_VERSION` | `dev`                   | Build version, inlined at build time. See Versioning.                  |
+
+Every request is logged by `src/lib/server/hooks/logging.ts` and unexpected
+errors by `handleError`, through `src/lib/server/log.ts`, which writes slog's
+text and JSON formats so one pipeline reads both apps. Use it instead of
+`console`.
 
 `/healthz` answers 200 while the app is up. `/version` reports the build
 version. `/readyz` runs the checks in `src/lib/server/checks.ts` and answers

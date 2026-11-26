@@ -24,6 +24,8 @@ WORKDIR /app
 COPY --from=builder /repo/apps/web/build ./build
 COPY --from=builder /repo/apps/web/package.json ./
 ENV NODE_ENV=production \
-    PORT=8080
+    PORT=8080 \
+    LOG_LEVEL=info \
+    LOG_FORMAT=json
 EXPOSE 8080
 CMD ["build"]
