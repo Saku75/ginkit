@@ -62,7 +62,13 @@ func New(lifetime context.Context, cfg Config, deps handlers.Dependencies, check
 		return nil, nil, fmt.Errorf("set trusted proxies: %w", err)
 	}
 	router.TrustedPlatform = cfg.ClientIPHeader
-	router.Use(sloggin.NewWithFilters(slog.Default(), sloggin.IgnorePath("/healthz", "/readyz")), gin.Recovery())
+	// Probe and version requests are noise unless the probes themselves are
+	// being debugged, so they are logged only at LOG_LEVEL=debug.
+	var filters []sloggin.Filter
+	if !slog.Default().Enabled(lifetime, slog.LevelDebug) {
+		filters = append(filters, sloggin.IgnorePath("/healthz", "/readyz", "/version"))
+	}
+	router.Use(sloggin.NewWithFilters(slog.Default(), filters...), gin.Recovery())
 
 	if len(cfg.CORSAllowedOrigins) > 0 {
 		c := cors.DefaultConfig()

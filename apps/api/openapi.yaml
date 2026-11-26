@@ -151,12 +151,8 @@ components:
           enum:
             - ok
           type: string
-        version:
-          description: Build version, the same for the API and web images of one release.
-          type: string
       required:
         - status
-        - version
       type: object
     ListProductsOutputBody:
       additionalProperties: false
@@ -379,6 +375,22 @@ components:
           description: API version served under this prefix.
           enum:
             - v1
+          type: string
+      required:
+        - version
+      type: object
+    VersionOutputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/VersionOutputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        version:
+          description: Build version, the same for the API and web images of one release.
           type: string
       required:
         - version
@@ -645,3 +657,23 @@ paths:
       summary: Quote an order
       tags:
         - v1
+  /version:
+    get:
+      description: The version this binary was built with. The web app's /readyz compares it with its own.
+      operationId: version
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VersionOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Build version
+      tags:
+        - Health

@@ -105,7 +105,7 @@ oxfmt.config.ts       Formatting at its defaults, with .svelte files through Pre
 | `MODE`                 | `development`                    | `development`, `staging`, or `release`. Development runs Gin in debug mode.          |
 | `PORT`                 | `3101`                           | Port to listen on. The image sets 8080.                                              |
 | `BASE_PATH`            | none                             | URL prefix to mount under, for hosting under a subpath without a proxy.              |
-| `LOG_LEVEL`            | `info`                           | `debug`, `info`, `warn`, or `error`.                                                 |
+| `LOG_LEVEL`            | `info`                           | `debug`, `info`, `warn`, or `error`. `debug` also logs probe and version requests.   |
 | `LOG_FORMAT`           | `text`                           | `text` or `json`.                                                                    |
 | `TRUSTED_PROXIES`      | none                             | Comma-separated IPs or CIDRs whose `X-Forwarded-For` header is trusted.              |
 | `CLIENT_IP_HEADER`     | none                             | Header carrying the real client IP, e.g. `CF-Connecting-IP`. Trusted from any peer.  |
@@ -117,6 +117,7 @@ oxfmt.config.ts       Formatting at its defaults, with .svelte files through Pre
 | ----------------------------- | ------------------------------------------------------------------------------- |
 | `GET /healthz`                | Liveness probe, 200 while the process is up                                     |
 | `GET /readyz`                 | Readiness probe, 503 when a check fails or during shutdown                      |
+| `GET /version`                | Build version; the web app's `/readyz` compares it with its own                 |
 | `GET /`                       | API reference, served from embedded files                                       |
 | `GET /openapi.yaml`           | OpenAPI document (also `.json`)                                                 |
 | `GET /v1`                     | Root of API version 1                                                           |
@@ -161,8 +162,8 @@ them at startup.
 | `API_URL`     | `http://localhost:3101` | Where server-side rendering reaches the API.          |
 | `APP_VERSION` | `dev`                   | Build version, inlined at build time. See Versioning. |
 
-`/healthz` answers 200 while the app is up. `/readyz` calls the API's
-`/healthz` and answers 503 while the API is unreachable or reports a different
+`/healthz` answers 200 while the app is up. `/version` reports the build
+version. `/readyz` calls the API's `/version` and answers 503 while the API is unreachable or reports a different
 build version.
 
 Call the API through the generated functions, one per operation and named
@@ -197,8 +198,8 @@ pnpm docker:build 1.4.0    # or an explicit one
 
 That runs `scripts/build-images.sh`, which passes the same `VERSION` build
 argument to both Dockerfiles. The API embeds it with `ldflags` into
-`internal/version` and reports it from `/healthz`; the web app inlines it as
-`APP_VERSION` at build time. Building one image on its own takes the same
+`internal/version` and reports it from `/version`; the web app inlines it as
+`APP_VERSION` at build time and serves it from its own `/version`. Building one image on its own takes the same
 argument: `docker build --build-arg VERSION=1.4.0 ...`.
 
 ## Deploying

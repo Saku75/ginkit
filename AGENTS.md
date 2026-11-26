@@ -39,6 +39,9 @@ explains what the pieces are; this file is about how to change them.
 - In the web app, `#lib` imports end in `.js`, SvelteKit types come from
   `@sveltejs/kit/hooks`, and everything is a devDependency because the
   build bundles it.
+- Server-side code in the web app calls the API through the client set up in
+  `src/hooks.server.ts`, with the client's own fetch. Passing SvelteKit's
+  `fetch` adds an `Origin` header that the API's CORS rejects.
 - Keep the template general. Nothing application-specific belongs here: no
   database, no deployment files, no auth.
 
