@@ -28,6 +28,23 @@ func New(baseURL string, httpClient *http.Client) *Client {
 	return &Client{baseURL: baseURL, http: httpClient}
 }
 
+// Ping reports whether the API answers, for a readiness check.
+func (c *Client) Ping(ctx context.Context) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/currencies", nil)
+	if err != nil {
+		return err
+	}
+	res, err := c.http.Do(req)
+	if err != nil {
+		return fmt.Errorf("rates: %w", err)
+	}
+	res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		return fmt.Errorf("rates: unexpected status %s", res.Status)
+	}
+	return nil
+}
+
 // Rate returns how many units of to one unit of from buys.
 func (c *Client) Rate(ctx context.Context, from, to string) (float64, error) {
 	if from == to {

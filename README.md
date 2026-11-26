@@ -130,8 +130,9 @@ oxfmt.config.ts       Formatting at its defaults, with .svelte files through Pre
 A route: add a file in `internal/handlers/v1` and call its register function
 from `v1.Register`. A new API version: a subpackage next to `v1`, mounted
 from `handlers.Register`. A readiness check: pass a `handlers.Check` to
-`app.New` in `cmd/api/main.go`. An environment variable: copy a file in
-`internal/env`.
+`app.New` in `cmd/api/main.go`, as the `rates` check shows; a check against
+another service is right only when the API cannot work without it. An
+environment variable: copy a file in `internal/env`.
 
 A client for another service: a package under `internal/clients`, built once
 in `cmd/api/main.go` and set on `handlers.Dependencies`. The version that
@@ -163,8 +164,11 @@ them at startup.
 | `APP_VERSION` | `dev`                   | Build version, inlined at build time. See Versioning. |
 
 `/healthz` answers 200 while the app is up. `/version` reports the build
-version. `/readyz` calls the API's `/version` and answers 503 while the API is unreachable or reports a different
-build version.
+version. `/readyz` runs the checks in `src/lib/server/checks.ts` and answers
+in the API's format: 200 with each check's result, or 503 naming every check
+that failed. The one check there calls the API's `/version` and fails while
+the API is unreachable or built from a different version; add a check per
+dependency the app cannot serve without.
 
 Call the API through the generated functions, one per operation and named
 after its operation ID. Pass SvelteKit's `fetch` in load functions:

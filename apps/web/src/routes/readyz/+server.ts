@@ -1,23 +1,27 @@
-import { APP_VERSION } from "$app/env/private";
 import { json } from "@sveltejs/kit";
-import { version } from "#lib/api/sdk.gen.js";
+import { checks } from "#lib/server/checks.js";
 import type { RequestHandler } from "./$types";
 
-// Ready only when the API reports the same build version, so a rolling deploy
-// holds traffic from this app until the API has rolled too.
+// Same contract as the API's /readyz: 200 with every check's result, or 503 in
+// the API's error format naming each check that failed.
 export const GET: RequestHandler = async () => {
-  const result = await version({ signal: AbortSignal.timeout(2000) }).catch(() => undefined);
-  const api = result?.data?.version ?? null;
+  const results = await Promise.allSettled(checks.map((check) => check.run()));
+  const failed = results.flatMap((result, i) =>
+    result.status === "rejected"
+      ? [{ location: `checks.${checks[i].name}`, message: reason(result.reason) }]
+      : [],
+  );
 
-  if (api === null) {
-    const detail = result?.response ? `API answered ${result.response.status}` : "API unreachable";
-    return json({ status: "unavailable", version: APP_VERSION, api, detail }, { status: 503 });
-  }
-  if (api !== APP_VERSION) {
+  if (failed.length > 0) {
     return json(
-      { status: "unavailable", version: APP_VERSION, api, detail: "API version mismatch" },
-      { status: 503 },
+      { title: "Service Unavailable", status: 503, detail: "service is not ready", errors: failed },
+      { status: 503, headers: { "content-type": "application/problem+json" } },
     );
   }
-  return json({ status: "ok", version: APP_VERSION, api });
+  return json({
+    status: "ok",
+    checks: Object.fromEntries(checks.map((check) => [check.name, "ok"])),
+  });
 };
+
+const reason = (error: unknown) => (error instanceof Error ? error.message : String(error));

@@ -34,11 +34,15 @@ func run() error {
 	ctx := shutdownContext()
 
 	// Clients are built once here and reach handlers through Dependencies.
-	// Readiness checks follow them as further arguments; see handlers.Check.
 	deps := handlers.Dependencies{
 		Rates: rates.New(env.RatesAPIURL(), &http.Client{Timeout: 5 * time.Second}),
 	}
-	router, _, err := app.New(ctx, app.ConfigFromEnv(), deps)
+	// One handlers.Check per dependency the API cannot work without. A check
+	// against another service takes this one out of rotation whenever that
+	// one is down, so the rates check is here for the shape, not as advice.
+	router, _, err := app.New(ctx, app.ConfigFromEnv(), deps,
+		handlers.Check{Name: "rates", Run: deps.Rates.Ping},
+	)
 	if err != nil {
 		return err
 	}
