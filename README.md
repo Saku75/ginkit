@@ -77,6 +77,7 @@ apps/api/
   cmd/api/            Entry point: logging, signals, the server
   cmd/openapi/        Writes openapi.yaml; run by go generate
   internal/app/       Builds the router and Huma API from a Config
+  internal/clients/   One package per external service; gitlab is the example
   internal/env/       One file per environment variable
   internal/handlers/  Probes, the docs page, and one subpackage per API version
   internal/logger/    slog setup from LOG_LEVEL and LOG_FORMAT
@@ -100,39 +101,48 @@ oxfmt.config.ts       Formatting at its defaults, with .svelte files through Pre
 
 ## The API
 
-| Variable               | Default       | Description                                                                         |
-| ---------------------- | ------------- | ----------------------------------------------------------------------------------- |
-| `MODE`                 | `development` | `development`, `staging`, or `release`. Development runs Gin in debug mode.         |
-| `PORT`                 | `3101`        | Port to listen on. The image sets 8080.                                             |
-| `BASE_PATH`            | none          | URL prefix to mount under, for hosting under a subpath without a proxy.             |
-| `LOG_LEVEL`            | `info`        | `debug`, `info`, `warn`, or `error`. `debug` also logs probe and version requests.  |
-| `LOG_FORMAT`           | `text`        | `text` or `json`.                                                                   |
-| `TRUSTED_PROXIES`      | none          | Comma-separated IPs or CIDRs whose `X-Forwarded-For` header is trusted.             |
-| `CLIENT_IP_HEADER`     | none          | Header carrying the real client IP, e.g. `CF-Connecting-IP`. Trusted from any peer. |
-| `CORS_ALLOWED_ORIGINS` | none          | Comma-separated origins allowed from browsers, or `*`. Empty disables CORS.         |
-| `SHUTDOWN_DELAY`       | `15s`         | How long to keep serving after SIGTERM while `/readyz` fails. `0s` disables.        |
+| Variable               | Default              | Description                                                                            |
+| ---------------------- | -------------------- | -------------------------------------------------------------------------------------- |
+| `MODE`                 | `development`        | `development`, `staging`, or `release`. Development runs Gin in debug mode.            |
+| `PORT`                 | `3101`               | Port to listen on. The image sets 8080.                                                |
+| `BASE_PATH`            | none                 | URL prefix to mount under, for hosting under a subpath without a proxy.                |
+| `LOG_LEVEL`            | `info`               | `debug`, `info`, `warn`, or `error`. `debug` also logs probe and version requests.     |
+| `LOG_FORMAT`           | `text`               | `text` or `json`.                                                                      |
+| `TRUSTED_PROXIES`      | none                 | Comma-separated IPs or CIDRs whose `X-Forwarded-For` header is trusted.                |
+| `CLIENT_IP_HEADER`     | none                 | Header carrying the real client IP, e.g. `CF-Connecting-IP`. Trusted from any peer.    |
+| `CORS_ALLOWED_ORIGINS` | none                 | Comma-separated origins allowed from browsers, or `*`. Empty disables CORS.            |
+| `SHUTDOWN_DELAY`       | `15s`                | How long to keep serving after SIGTERM while `/readyz` fails. `0s` disables.           |
+| `GITLAB_URL`           | `https://gitlab.com` | GitLab instance behind the project routes, without `/api/v4`.                          |
+| `GITLAB_TOKEN`         | none                 | Token with `read_api`. Empty sends no credentials, which reaches public projects only. |
 
-| Route               | Purpose                                                         |
-| ------------------- | --------------------------------------------------------------- |
-| `GET /healthz`      | Liveness probe, 200 while the process is up                     |
-| `GET /readyz`       | Readiness probe, 503 when a check fails or during shutdown      |
-| `GET /version`      | Build version; the web app's `/readyz` compares it with its own |
-| `GET /`             | API reference, served from embedded files                       |
-| `GET /openapi.yaml` | OpenAPI document (also `.json`)                                 |
-| `GET /v1`           | Root of API version 1                                           |
-| `GET /v1/example`   | Example route                                                   |
+| Route                   | Purpose                                                                             |
+| ----------------------- | ----------------------------------------------------------------------------------- |
+| `GET /healthz`          | Liveness probe, 200 while the process is up                                         |
+| `GET /readyz`           | Readiness probe, 503 when a check fails or during shutdown                          |
+| `GET /version`          | Build version; the web app's `/readyz` compares it with its own                     |
+| `GET /`                 | API reference, served from embedded files                                           |
+| `GET /openapi.yaml`     | OpenAPI document (also `.json`)                                                     |
+| `GET /v1`               | Root of API version 1                                                               |
+| `GET /v1/example`       | Example route                                                                       |
+| `GET /v1/projects`      | GitLab projects the token can see, most recently active first; `search` and `limit` |
+| `GET /v1/projects/{id}` | One GitLab project, or 404                                                          |
 
 A route: add a file in `internal/handlers/v1` and call its register function
 from `v1.Register`. A new API version: a subpackage next to `v1`, mounted
 from `handlers.Register`. A readiness check: pass a `handlers.Check` to
-`app.New` in `cmd/api/main.go`; a check against another service is right
-only when the API cannot work without it. An environment variable: copy a
-file in `internal/env`.
+`app.New` in `cmd/api/main.go`, as the `gitlab` check shows; a check against
+another service is right only when the API cannot work without it. An
+environment variable: copy a file in `internal/env`.
 
 A client for another service: a package under `internal/clients`, built once
 in `cmd/api/main.go` and set on `handlers.Dependencies`. The version that
 calls it declares the interface it needs, and `handlers.Register` passes the
-client in, so handlers stay testable with a fake.
+client in, so handlers stay testable with a fake. The `gitlab` client is the
+example: it wraps `gitlab.com/gitlab-org/api/client-go`, `cmd/api/main.go`
+builds it from `GITLAB_URL` and `GITLAB_TOKEN` and registers its `Ping` as
+the `gitlab` check, and `v1` takes it as its `GitLab` interface, one accessor
+per SDK service its handlers call, so a test can hand it the mocks from the
+SDK's `testing` package.
 
 The API reads and writes JSON with `encoding/json/v2`, configured in
 `internal/app`. Request and response structs are strict, which Huma does by

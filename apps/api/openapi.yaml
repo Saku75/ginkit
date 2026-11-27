@@ -94,6 +94,55 @@ components:
       required:
         - status
       type: object
+    ListProjectsOutputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/ListProjectsOutputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        items:
+          items:
+            $ref: "#/components/schemas/Project"
+          type:
+            - array
+            - "null"
+      required:
+        - items
+      type: object
+    Project:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/Project.json
+          format: uri
+          readOnly: true
+          type: string
+        id:
+          format: int64
+          type: integer
+        lastActivityAt:
+          format: date-time
+          type: string
+        name:
+          type: string
+        path:
+          description: Namespace and project path, as in the URL.
+          type: string
+        webUrl:
+          format: uri
+          type: string
+      required:
+        - id
+        - name
+        - path
+        - webUrl
+      type: object
     ReadyzOutputBody:
       additionalProperties: false
       properties:
@@ -238,6 +287,101 @@ paths:
                 $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Example v1 route
+      tags:
+        - v1
+  /v1/projects:
+    get:
+      description: Projects the configured token can see, most recently active first.
+      operationId: v1-list-projects
+      parameters:
+        - description: Matches project names and paths.
+          explode: false
+          in: query
+          name: search
+          schema:
+            description: Matches project names and paths.
+            maxLength: 100
+            type: string
+        - explode: false
+          in: query
+          name: limit
+          schema:
+            default: 20
+            format: int64
+            maximum: 100
+            minimum: 1
+            type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListProjectsOutputBody"
+          description: OK
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Internal Server Error
+        "502":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Bad Gateway
+      summary: List GitLab projects
+      tags:
+        - v1
+  /v1/projects/{id}:
+    get:
+      operationId: v1-get-project
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            format: int64
+            minimum: 1
+            type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+          description: OK
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Internal Server Error
+        "502":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Bad Gateway
+      summary: One GitLab project
       tags:
         - v1
   /version:

@@ -4,11 +4,14 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"ginkit/api/internal/app"
+	"ginkit/api/internal/clients/gitlab"
 	"ginkit/api/internal/env"
 	"ginkit/api/internal/handlers"
 	"ginkit/api/internal/logger"
@@ -31,10 +34,16 @@ func run() error {
 	ctx := shutdownContext()
 
 	// Clients are built once here and reach handlers through Dependencies.
-	deps := handlers.Dependencies{}
-	// Pass app.New one handlers.Check per dependency the API cannot work
-	// without; /readyz fails while any of them does.
-	router, _, err := app.New(ctx, app.ConfigFromEnv(), deps)
+	gl, err := gitlab.New(env.GitLabURL(), env.GitLabToken(), &http.Client{Timeout: 10 * time.Second})
+	if err != nil {
+		return err
+	}
+	deps := handlers.Dependencies{GitLab: gl}
+	// One handlers.Check per dependency the API cannot work without; /readyz
+	// fails while any of them does, which takes this instance out of rotation.
+	router, _, err := app.New(ctx, app.ConfigFromEnv(), deps,
+		handlers.Check{Name: "gitlab", Run: gl.Ping},
+	)
 	if err != nil {
 		return err
 	}
