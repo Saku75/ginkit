@@ -209,8 +209,10 @@ pnpm docker:build 1.4.0    # or an explicit one
 
 That runs `scripts/build-images.sh`, which passes the same `VERSION` build
 argument to both Dockerfiles. The API embeds it with `ldflags` into
-`internal/version` and reports it from `/version`; the web app inlines it as
-`APP_VERSION` at build time and serves it from its own `/version`. Building one image on its own takes the same
+`internal/version` and reports it from `/version` and as `info.version` of the
+OpenAPI document it serves; the committed `openapi.yaml` is generated without
+one and says `dev`. The web app inlines it as `APP_VERSION` at build time and
+serves it from its own `/version`. Building one image on its own takes the same
 argument: `docker build --build-arg VERSION=1.4.0 ...`.
 
 ## Deploying

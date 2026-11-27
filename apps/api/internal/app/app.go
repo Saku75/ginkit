@@ -17,6 +17,7 @@ import (
 
 	"ginkit/api/internal/env"
 	"ginkit/api/internal/handlers"
+	"ginkit/api/internal/version"
 )
 
 // Config selects what New builds. The zero value is release mode with nothing
@@ -77,7 +78,7 @@ func New(lifetime context.Context, cfg Config, deps handlers.Dependencies, check
 		router.Use(cors.New(c))
 	}
 
-	hc := huma.DefaultConfig("Ginkit API", "1.0.0")
+	hc := huma.DefaultConfig("Ginkit API", version.Version)
 	hc.Formats = map[string]huma.Format{"application/json": jsonFormat, "json": jsonFormat}
 	hc.DocsPath = ""    // Both are served by handlers/docs, which knows the
 	hc.OpenAPIPath = "" // public base URL behind a proxy.

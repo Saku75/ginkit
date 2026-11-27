@@ -397,7 +397,7 @@ components:
       type: object
 info:
   title: Ginkit API
-  version: 1.0.0
+  version: dev
 openapi: 3.1.0
 paths:
   /healthz:
