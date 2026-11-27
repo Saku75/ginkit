@@ -26,10 +26,19 @@ function openapiWatch(config: OpenApiConfig): Plugin {
     configureServer(server) {
       if (!input) return;
       server.watcher.add(input);
-      server.watcher.on("change", async (file) => {
+      server.watcher.on("change", (file) => {
         if (file !== input) return;
-        await createClient(config);
-        server.config.logger.info("regenerated src/lib/api", { timestamp: true });
+        createClient(config)
+          .then(() => {
+            server.config.logger.info("regenerated src/lib/api", { timestamp: true });
+          })
+          .catch((cause: unknown) => {
+            // Left unhandled, a rejection here would end the dev server.
+            const detail = cause instanceof Error ? cause.message : "unknown error";
+            server.config.logger.warn(`src/lib/api not regenerated: ${detail}`, {
+              timestamp: true,
+            });
+          });
       });
     },
   };
@@ -42,7 +51,7 @@ export default defineConfig({
       compilerOptions: {
         // Force runes mode for the project, except for libraries. Can be removed in svelte 6.
         runes: ({ filename }) =>
-          filename.split(/[/\\]/).includes("node_modules") ? undefined : true,
+          filename.split(/[/\\]/u).includes("node_modules") ? undefined : true,
       },
       adapter: adapter(),
     }),
@@ -56,9 +65,12 @@ export default defineConfig({
     proxy: {
       "/api": {
         target: "http://localhost:3101",
-        rewrite: (path) => path.replace(/^\/api(?=\/|$)/, "") || "/",
-        configure: (proxy) =>
-          proxy.on("proxyReq", (request) => request.setHeader("X-Forwarded-Prefix", "/api")),
+        rewrite: (path) => path.replace(/^\/api(?=\/|$)/u, "") || "/",
+        configure: (proxy) => {
+          proxy.on("proxyReq", (request) => {
+            request.setHeader("X-Forwarded-Prefix", "/api");
+          });
+        },
       },
     },
   },

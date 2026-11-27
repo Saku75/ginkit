@@ -27,7 +27,7 @@ export const loggingServerHook: Handle = async ({ event, resolve }) => {
   return response;
 };
 
-function clientAddress(event: Parameters<Handle>[0]["event"]) {
+function clientAddress(event: Parameters<Handle>[0]["event"]): string | undefined {
   try {
     return event.getClientAddress();
   } catch {

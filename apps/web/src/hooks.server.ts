@@ -49,5 +49,7 @@ export const handleError: HandleServerError = (input) => {
         issues: input.issues.map((issue) => issue.message),
       });
       break;
+    case "framework":
+      break;
   }
 };

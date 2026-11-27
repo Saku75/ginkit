@@ -1,4 +1,3 @@
-import { json } from "@sveltejs/kit";
 import { checks } from "#lib/server/checks.js";
 import type { RequestHandler } from "./$types";
 
@@ -13,12 +12,12 @@ export const GET: RequestHandler = async () => {
   );
 
   if (failed.length > 0) {
-    return json(
+    return Response.json(
       { title: "Service Unavailable", status: 503, detail: "service is not ready", errors: failed },
       { status: 503, headers: { "content-type": "application/problem+json" } },
     );
   }
-  return json({
+  return Response.json({
     status: "ok",
     checks: Object.fromEntries(checks.map((check) => [check.name, "ok"])),
   });

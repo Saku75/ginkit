@@ -10,10 +10,10 @@ export type Check = { name: string; run: () => Promise<void> };
 const api: Check = {
   name: "api",
   run: async () => {
-    const result = await version({ signal: AbortSignal.timeout(2000) }).catch(() => undefined);
-    if (!result?.data) {
+    const result = await version({ signal: AbortSignal.timeout(2000) });
+    if (!result.data) {
       throw new Error(
-        result?.response ? `API answered ${result.response.status}` : "API unreachable",
+        result.response ? `API answered ${result.response.status}` : "API unreachable",
       );
     }
     if (result.data.version !== APP_VERSION) {

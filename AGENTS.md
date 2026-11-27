@@ -22,6 +22,10 @@ explains what the pieces are; this file is about how to change them.
   that will bite. They do not describe what the code visibly does. When in
   doubt, leave the comment out.
 - Formatting is oxfmt at its defaults and gofmt. Do not add style options.
+- Linting is type-aware oxlint; correctness findings fail `pnpm lint` and the
+  rest warn. Fix a finding in the code first. A rule goes to `off` in
+  `oxlint.config.ts` only when a library's types leave no way to satisfy it,
+  with a comment saying which.
 - An environment variable is one file in `apps/api/internal/env`, read
   through `lookup`, plus a row in the README table and a line in
   `.env.example`. The web app declares its variables in `src/env.ts` with a

@@ -63,7 +63,7 @@ dependency order, with the generate step first where needed.
 | `pnpm build`        | Builds both apps into `apps/api/bin` and `apps/web/build`               |
 | `pnpm docker:build` | Builds both images with one version; see Versioning                     |
 | `pnpm check`        | `svelte-check` on the web app; the API checks `openapi.yaml` is current |
-| `pnpm lint`         | oxlint on the web app and `go vet` on the API                           |
+| `pnpm lint`         | Type-aware oxlint on the web app and `go vet` on the API                |
 | `pnpm test`         | Runs each app's tests                                                   |
 | `pnpm fmt`          | oxfmt across the repo, then gofmt in the API                            |
 | `pnpm fmt:check`    | The same, without writing                                               |
@@ -94,7 +94,8 @@ packages/             Empty until something is shared between the apps
 scripts/              build-images.sh builds both images with one version
 turbo.json            Task graph
 AGENTS.md             Conventions for contributors and coding agents
-oxlint.config.ts      Lint rules at their defaults. .svelte files are linted in their script blocks.
+oxlint.config.ts      Type-aware oxlint: correctness rules fail the run, the suspicious, pedantic and perf
+                      categories warn. .svelte files are linted in their script blocks.
 oxfmt.config.ts       Formatting at its defaults, with .svelte files through Prettier's Svelte plugin.
 ```
 
