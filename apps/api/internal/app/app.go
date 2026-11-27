@@ -32,7 +32,7 @@ type Config struct {
 
 // jsonFormat reads and writes bodies with encoding/json/v2. Besides stricter
 // decoding, it lets a struct keep properties it does not declare in a map
-// tagged `json:",embed"`; v1.Customer shows the pattern.
+// tagged `json:",embed"`.
 var jsonFormat = huma.Format{
 	Marshal:   func(w io.Writer, v any) error { return json.MarshalWrite(w, v) },
 	Unmarshal: func(data []byte, v any) error { return json.Unmarshal(data, v) },

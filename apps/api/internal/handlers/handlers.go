@@ -19,5 +19,5 @@ func Register(lifetime context.Context, api huma.API, basePath string, deps Depe
 	registerReadyz(lifetime, api, checks)
 	registerVersion(api)
 	docs.Register(api, basePath)
-	v1.Register(huma.NewGroup(api, basePath), deps.Rates)
+	v1.Register(huma.NewGroup(api, basePath))
 }
